@@ -1,0 +1,39 @@
+From b4863bf752edea7782c75f2a1615325fdf0e4f73 Mon Sep 17 00:00:00 2001
+From: Howard Chu <hyc@symas.com>
+Date: Sun, 18 Dec 2011 17:26:49 -0800
+Subject: [PATCH] Fix searchresults close
+
+The user's close callback was not being invoked
+---
+ finch/gntnotify.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git finch/gntnotify.c finch/gntnotify.c
+index 80b9be1..5a06cd9 100644
+--- finch/gntnotify.c
++++ finch/gntnotify.c
+@@ -397,6 +397,12 @@ finch_notify_sr_new_rows(PurpleConnection *gc,
+ 	}
+ }
+ 
++static void
++notify_sr_destroy_cb(GntWidget *window, void *data)
++{
++	purple_notify_close(PURPLE_NOTIFY_SEARCHRESULTS, window);
++}
++
+ static void *
+ finch_notify_searchresults(PurpleConnection *gc, const char *title,
+ 		const char *primary, const char *secondary,
+@@ -478,6 +484,8 @@ finch_notify_searchresults(PurpleConnection *gc, const char *title,
+ 	}
+ 
+ 	gnt_box_add_widget(GNT_BOX(window), box);
++	g_signal_connect(G_OBJECT(tree), "destroy",
++			G_CALLBACK(notify_sr_destroy_cb), NULL);
+ 
+ 	finch_notify_sr_new_rows(gc, results, tree);
+ 
+-- 
+1.7.1
+

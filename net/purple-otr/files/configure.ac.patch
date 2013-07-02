@@ -1,0 +1,13 @@
+--- configure.ac.orig	2013-05-17 22:19:36.000000000 -0700
++++ configure.ac	2013-05-17 22:46:32.000000000 -0700
+@@ -2,7 +2,10 @@
+
+ AC_INIT(purple-otr, 3.2.1)
+
+-AM_CONFIG_HEADER(config.h)
++m4_pattern_allow([AM_PROG_AR])
++AM_PROG_AR
++
++AC_CONFIG_HEADERS(config.h)
+
+ AM_INIT_AUTOMAKE([-Wall -Werror])

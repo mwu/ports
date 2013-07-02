@@ -1,0 +1,20 @@
+PortSystem 1.0
+
+name		newsbeuter
+version		2.6
+categories	net
+maintainers	rsync@reifferscheid.org
+homepage	http://www.newsbeuter.org/downloads/
+master_sites http://www.newsbeuter.org/downloads/
+description	the mutt of rss readers
+configure { }
+destroot.destdir    prefix=${destroot}${prefix}
+
+long_description the mutt of rss readers
+platforms	macosx
+checksums           md5     4a36627c5fabca6b2718a0ac78e6666f \
+                    sha1    36f6f4028b1432f0b679090610645700ec6146b8 \
+                    rmd160  c6f912d0e87f1e8f971cf75d83f032a768694890
+
+depends_lib	port:stfl \
+            port:json-c

@@ -1,0 +1,47 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 105534 2013-04-23 23:48:50Z cal@macports.org $
+
+PortSystem          1.0
+
+name                purple-otr
+version             2.10.1
+categories          net
+platforms           darwin
+license             GPL-2+
+maintainers         otherware.org:nefar
+description         libpurple plugin for OTR
+long_description    Pidgin is an Open Source clone of America OnLine's \
+                    Instant Messenger client that uses GTK+ version 2.  It \
+                    features multiple groups, group chat, user information \
+                    fetching and registration, time stamping, and more.  It \
+                    also supports other IM protocols, including Yahoo!, MSN, \
+                    ICQ, Jabber, Napster, IRC, and Zephyr via included \
+                    plugins.
+
+homepage            https://gitorious.org/purple-otr/purple-otr
+
+fetch.type          git
+git.url             git://gitorious.org/purple-otr/purple-otr.git
+
+depends_build       port:automake \
+                    port:autoconf \
+                    port:intltool \
+                    port:libtool
+
+depends_lib         port:libgpg-error \
+                    port:libotr \
+                    port:libgcrypt \
+                    port:pidgin \
+                    port:glib2 
+
+universal_variant   yes
+
+patchfiles          configure.ac.patch
+
+use_autoreconf      yes
+autoreconf.args     -s -i
+
+pre-configure {
+  system -W ${worksrcpath} "aclocal"
+  system -W ${worksrcpath} "intltoolize --force --copy"
+}

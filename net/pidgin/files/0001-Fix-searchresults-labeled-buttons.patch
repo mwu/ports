@@ -1,0 +1,26 @@
+From 4ad3b94cccde4f66fca476c1482fecb6d6e3801a Mon Sep 17 00:00:00 2001
+From: Howard Chu <hyc@symas.com>
+Date: Sun, 18 Dec 2011 19:39:36 -0800
+Subject: [PATCH] Fix searchresults labeled buttons
+
+button was created but wasn't added to the dialog, so it couldn't be used
+---
+ pidgin/gtknotify.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git pidgin/gtknotify.c pidgin/gtknotify.c
+index 8d15e03..e9922ce 100644
+--- pidgin/gtknotify.c
++++ pidgin/gtknotify.c
+@@ -1044,7 +1044,7 @@ pidgin_notify_searchresults(PurpleConnection *gc, const char *title,
+ 		switch (b->type) {
+ 			case PURPLE_NOTIFY_BUTTON_LABELED:
+ 				if(b->label) {
+-					button = gtk_button_new_with_label(b->label);
++					button = gtk_dialog_add_button(GTK_DIALOG(window), b->label, GTK_RESPONSE_NONE);
+ 				} else {
+ 					purple_debug_warning("gtknotify", "Missing button label\n");
+ 				}
+-- 
+1.7.1
+

@@ -1,0 +1,11 @@
+--- stfl_internals.h	2009-06-19 10:27:33.000000000 -0700
++++ stfl_internals.h.new	2011-04-24 11:57:45.000000000 -0700
+@@ -28,7 +28,7 @@
+ #endif
+ 
+ #include "stfl.h"
+-#include <ncursesw/ncurses.h>
++#include <ncurses.h>
+ #include <pthread.h>
+ 
+ struct stfl_widget_type;

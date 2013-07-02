@@ -1,0 +1,30 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 54246 2009-07-23 19:46:28Z ryandesign@macports.org $
+
+PortSystem          1.0
+PortGroup           python26 1.0
+
+name                canto
+version             0.7.5
+categories          net python
+maintainers         jack@codezen.org brett
+description         flexible ncurses Atom/RSS newsreader for the console
+long_description    Canto is an Atom/RSS feed reader for the console that is meant to be \
+quick, concise, and colorful. It provides a minimal, yet information packed interface with \
+almost infinite customization and extensibility
+homepage            http://codezen.org/canto
+platforms           darwin
+master_sites        http://codezen.org/static/
+
+checksums           md5     e0eb4d08ea8e909e41a5f6874e456303 \
+                    sha1    38186e0db5c491b1380f598ab9987f542b0835c2 \
+                                        rmd160  077b170c22bf241059dae465e2a267c6a890b799
+
+depends_lib         port:ncursesw \
+                    port:py26-feedparser \
+                    port:py26-chardet
+
+
+post-destroot {
+    ln -s ${prefix}/Library/Frameworks/Python.framework/Versions/2.6/bin/canto ${prefix}/bin/canto
+}

@@ -1,0 +1,41 @@
+# $Id: Portfile 54860 2009-08-03 06:54:17Z ryandesign@macports.org $
+
+PortSystem          1.0
+
+name                stfl
+version             0.21
+categories          devel
+platforms           darwin
+maintainers         lutz.horn@fastmail.fm
+
+description         Structured Terminal Forms Language/Library
+long_description    STFL is a library which implements a curses-based widget \
+                    set for text terminals. A special language (the \
+                    Structured Terminal Forms Language) is used to describe \
+                    STFL GUIs. The language is designed to be easy and fast \
+                    to write so an application programmer does not need to \
+                    spend ages fiddling around with the GUI and can \
+                    concentrate on the more interesting programming tasks.
+
+homepage            http://www.clifford.at/stfl/
+master_sites        http://www.clifford.at/stfl/
+distname            stfl-${version}
+
+checksums           md5     888502c3f332a0ee66e490690d79d404 \
+                    sha1    0313eafa1fe4dcfea1f2edd34d453baaa46df277 \
+                    rmd160  d8b56cc97b4d76adba8034ce9bbae631e6e9d17e
+
+depends_lib         port:ncurses \
+                    port:libiconv
+
+patchfiles          patch-Makefile.diff patch-stfl_internals_h.diff
+
+post-patch {
+    reinplace "s|/usr/local|${prefix}|g" ${worksrcpath}/Makefile.cfg
+}
+
+use_configure       no
+
+build.env           CC=${configure.cc} \
+                    CFLAGS=${configure.cppflags} \
+                    LDLIBS=${configure.ldflags}

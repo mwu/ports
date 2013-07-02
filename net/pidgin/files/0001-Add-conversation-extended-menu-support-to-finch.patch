@@ -1,0 +1,367 @@
+From 00ab12203df8f0a7059748817c4d7b958ccb08f9 Mon Sep 17 00:00:00 2001
+From: Howard Chu <hyc@symas.com>
+Date: Thu, 22 Dec 2011 14:23:23 -0800
+Subject: [PATCH] Add conversation-extended menu support to finch
+
+Consolidate gntmenu support from gntblist to new gntmenuutil files.
+---
+ finch/Makefile.am   |    2 +
+ finch/gntblist.c    |   48 ++------------------------------
+ finch/gntconv.c     |   46 +++++++++++++++++++++++++++++++
+ finch/gntconv.h     |    1 +
+ finch/gntmenuutil.c |   75 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ finch/gntmenuutil.h |   49 +++++++++++++++++++++++++++++++++
+ 6 files changed, 176 insertions(+), 45 deletions(-)
+ create mode 100644 finch/gntmenuutil.c
+ create mode 100644 finch/gntmenuutil.h
+
+diff --git finch/Makefile.am finch/Makefile.am
+index 85502d3..be23168 100644
+--- finch/Makefile.am
++++ finch/Makefile.am
+@@ -27,6 +27,7 @@ finch_SOURCES = \
+ 	gntidle.c \
+ 	gntlog.c \
+ 	gntmedia.c \
++	gntmenuutil.c \
+ 	gntnotify.c \
+ 	gntplugin.c \
+ 	gntpounce.c \
+@@ -49,6 +50,7 @@ finch_headers = \
+ 	gntidle.h \
+ 	gntlog.h \
+ 	gntmedia.h \
++	gntmenuutil.h \
+ 	gntnotify.h \
+ 	gntplugin.h \
+ 	gntpounce.h \
+diff --git finch/gntblist.c finch/gntblist.c
+index b2c62c5..8e50dfd 100644
+--- finch/gntblist.c
++++ finch/gntblist.c
+@@ -50,6 +50,7 @@
+ #include "gntmenu.h"
+ #include "gntmenuitem.h"
+ #include "gntmenuitemcheck.h"
++#include "gntmenuutil.h"
+ #include "gntpounce.h"
+ #include "gntstyle.h"
+ #include "gnttree.h"
+@@ -1072,43 +1073,6 @@ selection_activate(GntWidget *widget, FinchBlist *ggblist)
+ }
+ 
+ static void
+-context_menu_callback(GntMenuItem *item, gpointer data)
+-{
+-	PurpleMenuAction *action = data;
+-	PurpleBlistNode *node = ggblist->cnode;
+-	if (action) {
+-		void (*callback)(PurpleBlistNode *, gpointer);
+-		callback = (void (*)(PurpleBlistNode *, gpointer))action->callback;
+-		if (callback)
+-			callback(node, action->data);
+-		else
+-			return;
+-	}
+-}
+-
+-static void
+-gnt_append_menu_action(GntMenu *menu, PurpleMenuAction *action, gpointer parent)
+-{
+-	GList *list;
+-	GntMenuItem *item;
+-
+-	if (action == NULL)
+-		return;
+-
+-	item = gnt_menuitem_new(action->label);
+-	if (action->callback)
+-		gnt_menuitem_set_callback(GNT_MENU_ITEM(item), context_menu_callback, action);
+-	gnt_menu_add_item(menu, GNT_MENU_ITEM(item));
+-
+-	if (action->children) {
+-		GntWidget *sub = gnt_menu_new(GNT_MENU_POPUP);
+-		gnt_menuitem_set_submenu(item, GNT_MENU(sub));
+-		for (list = action->children; list; list = list->next)
+-			gnt_append_menu_action(GNT_MENU(sub), list->data, action);
+-	}
+-}
+-
+-static void
+ append_proto_menu(GntMenu *menu, PurpleConnection *gc, PurpleBlistNode *node)
+ {
+ 	GList *list;
+@@ -1124,9 +1088,7 @@ append_proto_menu(GntMenu *menu, PurpleConnection *gc, PurpleBlistNode *node)
+ 		if (!act)
+ 			continue;
+ 		act->data = node;
+-		gnt_append_menu_action(menu, act, NULL);
+-		g_signal_connect_swapped(G_OBJECT(menu), "destroy",
+-			G_CALLBACK(purple_menu_action_free), act);
++		gnt_append_menu_action(menu, act, node);
+ 	}
+ }
+ 
+@@ -1136,8 +1098,6 @@ add_custom_action(GntMenu *menu, const char *label, PurpleCallback callback,
+ {
+ 	PurpleMenuAction *action = purple_menu_action_new(label, callback, data, NULL);
+ 	gnt_append_menu_action(menu, action, NULL);
+-	g_signal_connect_swapped(G_OBJECT(menu), "destroy",
+-			G_CALLBACK(purple_menu_action_free), action);
+ }
+ 
+ static void
+@@ -1375,9 +1335,7 @@ append_extended_menu(GntMenu *menu, PurpleBlistNode *node)
+ 	for (iter = purple_blist_node_get_extended_menu(node);
+ 			iter; iter = g_list_delete_link(iter, iter))
+ 	{
+-		gnt_append_menu_action(menu, iter->data, NULL);
+-		g_signal_connect_swapped(G_OBJECT(menu), "destroy",
+-				G_CALLBACK(purple_menu_action_free), iter->data);
++		gnt_append_menu_action(menu, iter->data, node);
+ 	}
+ }
+ 
+diff --git finch/gntconv.c finch/gntconv.c
+index 04c8828..d78c654 100644
+--- finch/gntconv.c
++++ finch/gntconv.c
+@@ -52,6 +52,7 @@
+ #include "gntmenu.h"
+ #include "gntmenuitem.h"
+ #include "gntmenuitemcheck.h"
++#include "gntmenuutil.h"
+ #include "gntstyle.h"
+ #include "gnttextview.h"
+ #include "gnttree.h"
+@@ -403,6 +404,16 @@ cleared_message_history_cb(PurpleConversation *conv, gpointer data)
+ 		gnt_text_view_clear(GNT_TEXT_VIEW(ggc->tv));
+ }
+ 
++static void gg_extended_menu(FinchConv *ggc);
++
++static void
++conv_updated(PurpleConversation *conv, PurpleConvUpdateType type)
++{
++	if (type == PURPLE_CONV_UPDATE_FEATURES) {
++		gg_extended_menu(FINCH_GET_DATA(conv));
++	}
++}
++
+ static void
+ clear_scrollback_cb(GntMenuItem *item, gpointer ggconv)
+ {
+@@ -595,6 +606,28 @@ invite_cb(GntMenuItem *item, gpointer ggconv)
+ }
+ 
+ static void
++gg_extended_menu(FinchConv *ggc)
++{
++	GntWidget *sub;
++	GList *list;
++
++	sub = gnt_menu_new(GNT_MENU_POPUP);
++	gnt_menuitem_set_submenu(ggc->plugins, GNT_MENU(sub));
++
++	for (list = purple_conversation_get_extended_menu(ggc->active_conv);
++			list; list = g_list_delete_link(list, list))
++	{
++		gnt_append_menu_action(GNT_MENU(sub), list->data, ggc->active_conv);
++	}
++}
++
++static void
++plugin_changed_cb(PurplePlugin *p, gpointer data)
++{
++	gg_extended_menu(data);
++}
++
++static void
+ gg_create_menu(FinchConv *ggc)
+ {
+ 	GntWidget *menu, *sub;
+@@ -665,6 +698,12 @@ gg_create_menu(FinchConv *ggc)
+ 			!(ggc->flags & FINCH_CONV_NO_SOUND));
+ 	gnt_menu_add_item(GNT_MENU(sub), item);
+ 	gnt_menuitem_set_callback(item, toggle_sound_cb, ggc);
++
++	item = gnt_menuitem_new(_("Plugins"));
++	gnt_menu_add_item(GNT_MENU(menu), item);
++	ggc->plugins = item;
++
++	gg_extended_menu(ggc);
+ }
+ 
+ static void
+@@ -876,6 +915,11 @@ finch_create_conversation(PurpleConversation *conv)
+ 	purple_signal_connect(purple_cmds_get_handle(), "cmd-removed", ggc,
+ 			G_CALLBACK(cmd_removed_cb), ggc);
+ 
++	purple_signal_connect(purple_plugins_get_handle(), "plugin-load", ggc,
++				PURPLE_CALLBACK(plugin_changed_cb), ggc);
++	purple_signal_connect(purple_plugins_get_handle(), "plugin-unload", ggc,
++				PURPLE_CALLBACK(plugin_changed_cb), ggc);
++
+ 	g_free(title);
+ 	gnt_box_give_focus_to_child(GNT_BOX(ggc->window), ggc->entry);
+ 	g_signal_connect(G_OBJECT(ggc->window), "gained-focus", G_CALLBACK(gained_focus_cb), ggc);
+@@ -1475,6 +1519,8 @@ void finch_conversation_init()
+ 					PURPLE_CALLBACK(chat_left_cb), NULL);
+ 	purple_signal_connect(purple_conversations_get_handle(), "cleared-message-history", finch_conv_get_handle(),
+ 					PURPLE_CALLBACK(cleared_message_history_cb), NULL);
++	purple_signal_connect(purple_conversations_get_handle(), "conversation-updated", finch_conv_get_handle(),
++					PURPLE_CALLBACK(conv_updated), NULL);
+ 	purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", finch_conv_get_handle(),
+ 					PURPLE_CALLBACK(buddy_signed_on_off), NULL);
+ 	purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", finch_conv_get_handle(),
+diff --git finch/gntconv.h finch/gntconv.h
+index b188469..55b9415 100644
+--- finch/gntconv.h
++++ finch/gntconv.h
+@@ -59,6 +59,7 @@ struct _FinchConv
+ 	GntWidget *tv;            /* text-view */
+ 	GntWidget *menu;
+ 	GntWidget *info;
++	GntMenuItem *plugins;
+ 	FinchConversationFlag flags;
+ 
+ 	union
+diff --git finch/gntmenuutil.c finch/gntmenuutil.c
+new file mode 100644
+index 0000000..968fe9b
+--- /dev/null
++++ finch/gntmenuutil.c
+@@ -0,0 +1,75 @@
++/**
++ * @file gntmenuutil.c GNT Menu Utility Functions
++ * @ingroup finch
++ */
++
++/* finch
++ *
++ * Finch is the legal property of its developers, whose names are too numerous
++ * to list here.  Please refer to the COPYRIGHT file distributed with this
++ * source distribution.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
++ */
++
++#include <internal.h>
++#include "finch.h"
++
++#include "gnt.h"
++#include "gntmenu.h"
++#include "gntmenuitem.h"
++#include "gntmenuutil.h"
++
++static void
++context_menu_callback(GntMenuItem *item, gpointer data)
++{
++	PurpleMenuAction *action = data;
++	if (action) {
++		void (*callback)(gpointer, gpointer);
++		callback = (void (*)(gpointer, gpointer))action->callback;
++		if (callback) {
++			gpointer ctx = g_object_get_data(G_OBJECT(item), "menuctx");
++			callback(ctx, action->data);
++		}
++	}
++}
++
++void
++gnt_append_menu_action(GntMenu *menu, PurpleMenuAction *action, gpointer ctx)
++{
++	GList *list;
++	GntMenuItem *item;
++
++	if (action == NULL)
++		return;
++
++	item = gnt_menuitem_new(action->label);
++	if (action->callback) {
++		gnt_menuitem_set_callback(item, context_menu_callback, action);
++		g_object_set_data(G_OBJECT(item), "menuctx", ctx);
++	}
++	gnt_menu_add_item(menu, item);
++
++	if (action->children) {
++		GntWidget *sub = gnt_menu_new(GNT_MENU_POPUP);
++		gnt_menuitem_set_submenu(item, GNT_MENU(sub));
++		for (list = action->children; list; list = g_list_delete_link(list, list))
++			gnt_append_menu_action(GNT_MENU(sub), list->data, ctx);
++		action->children = NULL;
++	}
++	g_signal_connect_swapped(G_OBJECT(menu), "destroy",
++		G_CALLBACK(purple_menu_action_free), action);
++}
++
+diff --git finch/gntmenuutil.h finch/gntmenuutil.h
+new file mode 100644
+index 0000000..e5c38bf
+--- /dev/null
++++ finch/gntmenuutil.h
+@@ -0,0 +1,49 @@
++/**
++ * @file gntmenuutil.h GNT Menu Utility Functions
++ * @ingroup finch
++ */
++
++/* finch
++ *
++ * Finch is the legal property of its developers, whose names are too numerous
++ * to list here.  Please refer to the COPYRIGHT file distributed with this
++ * source distribution.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
++ */
++#ifndef _GNT_MENUUTIL_H
++#define _GNT_MENUUTIL_H
++
++#include <gnt.h>
++#include <gntmenu.h>
++
++/***************************************************************************
++ * @name GNT Menu Utility Functions
++ ***************************************************************************/
++/*@{*/
++
++/**
++ * Add a PurpleMenuAction to a GntMenu.
++ *
++ * @param menu   the GntMenu to add to
++ * @param action the PurpleMenuAction to add
++ * @param ctx    the callback context, passed as the first argument to
++ *               the PurpleMenuAction's PurpleCallback function.
++ */
++void gnt_append_menu_action(GntMenu *menu, PurpleMenuAction *action, gpointer ctx);
++
++/*@}*/
++
++#endif
+-- 
+1.7.1
+

@@ -1,0 +1,34 @@
+From 1866725fe539e568b52e9360044fe3c369426658 Mon Sep 17 00:00:00 2001
+From: Howard Chu <hyc@symas.com>
+Date: Sun, 18 Dec 2011 20:43:09 -0800
+Subject: [PATCH] Fix insertion order in searchresult_new_rows
+
+---
+ finch/gntnotify.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git finch/gntnotify.c finch/gntnotify.c
+index 5a06cd9..dcf51e4 100644
+--- finch/gntnotify.c
++++ finch/gntnotify.c
+@@ -386,6 +386,7 @@ finch_notify_sr_new_rows(PurpleConnection *gc,
+ {
+ 	GntTree *tree = GNT_TREE(data);
+ 	GList *o;
++	void *prev = NULL;
+ 
+ 	/* XXX: Do I need to empty the tree here? */
+ 
+@@ -393,7 +394,8 @@ finch_notify_sr_new_rows(PurpleConnection *gc,
+ 	{
+ 		gnt_tree_add_row_after(GNT_TREE(tree), o->data,
+ 				gnt_tree_create_row_from_list(GNT_TREE(tree), o->data),
+-				NULL, NULL);
++				NULL, prev);
++		prev = o->data;
+ 	}
+ }
+ 
+-- 
+1.7.1
+
