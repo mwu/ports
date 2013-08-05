@@ -40,7 +40,7 @@ post-extract {
 }
 
 
-variant pdf_docs {Build the documentation in PDF} {
+variant pdf_docs description {Build the documentation in PDF} {
     depends_build-append port:asciidoc port:dblatex port:python27
     build.target         all
     patchfiles-append    patch-InclGitFile.py
