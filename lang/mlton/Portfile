@@ -1,0 +1,47 @@
+# $Id$
+
+PortSystem               1.0
+                        
+name		                 mlton	
+version			             20130715
+categories               lang
+maintainers              nomaintainer
+license			             BSD
+description		           The MLton Standard ML compiler.
+long_description         MLton is an open-source, whole-program, optimizing Standard ML compiler.
+homepage		             http://mlton.org
+platforms		             darwin
+distname		             ${name}-${version}
+distfiles                ${distname}.src.tgz ${distname}-1.amd64-darwin.gmp-macports.tgz
+master_sites	           sourceforge:project/mlton/mlton/${version}/
+                        
+depends_lib              port:gmp
+universal_variant        no
+supported_archs          x86_64
+                        
+checksums                mlton-20130715.src.tgz \
+                         rmd160  cab92f70f79063540267c3dc12166490cb397030 \
+                         sha256  215857ad11d44f8d94c27f75e74017aa44b2c9703304bcec9e38c20433143d6c \
+                         ${distname}-1.amd64-darwin.gmp-macports.tgz \
+                         rmd160 bc348fbab45b270932a24e6fc20c98166e484c5c \
+                         sha256 a9bfff3bc5a793e84306f98cd60f195a8139902900f96e1072d13c0813b49c10
+
+patchfiles               patch-Makefile.diff
+
+use_configure            no
+use_parallel_build       no
+destroot.args            PREFIX="${prefix}"
+
+build.target             all-no-docs
+build.post_args          PATH="${workpath}/usr/local/bin:$env(PATH)"
+
+post-extract {
+    reinplace            "s|^lib='|lib='${workpath}|" ${workpath}/usr/local/bin/mlton
+}
+
+
+variant pdf_docs {Build the documentation in PDF} {
+    depends_build-append port:asciidoc port:dblatex port:python27
+    build.target         all
+    patchfiles-append    patch-InclGitFile.py
+}
