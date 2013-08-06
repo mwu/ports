@@ -25,6 +25,8 @@ checksums                 ${distname}.src.tgz \
                           rmd160 bc348fbab45b270932a24e6fc20c98166e484c5c \
                           sha256 a9bfff3bc5a793e84306f98cd60f195a8139902900f96e1072d13c0813b49c10
 
+livecheck.regex           "\/${name}\/(\\d+)"
+
 use_configure             no
 use_parallel_build        no
 
