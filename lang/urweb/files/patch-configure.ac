@@ -1,0 +1,74 @@
+--- configure.ac	2014-04-26 07:52:36.000000000 -0700
++++ configure.ac.new	2014-05-24 10:11:47.000000000 -0700
+@@ -68,26 +68,51 @@
+ 
+ AM_CONDITIONAL(USE_EMACS, test "x$with_emacs" = xyes)
+ 
+-if test [-z $PGHEADER]; then
+-   AC_CHECK_HEADERS([postgresql/libpq-fe.h],
+-                    [PGHEADER=postgresql/libpq-fe.h])
+-fi
+-
+-if test [-z $PGHEADER]; then
+-   PGHEADER=libpq-fe.h
+-fi
+-
+-if test [-z $MSHEADER]; then
+-   AC_CHECK_HEADERS([mysql/mysql.h],
+-                    [MSHEADER=mysql/mysql.h])
+-fi
+-
+-if test [-z $MSHEADER]; then
+-   MSHEADER=mysql.h
+-fi
+-
+-if test [-z $SQHEADER]; then
+-   SQHEADER=sqlite3.h
++AC_ARG_WITH([postgresql],
++            [AS_HELP_STRING([--with-postgresql], [enable postgresql support])],
++            [with_postgresql=$withval],
++            [with_postgresql=no])
++
++AC_MSG_CHECKING([whether to enable postgresql])
++if test "$with_postgresql" = "yes"; then
++   if test [-z $PGHEADER]; then
++      AC_CHECK_HEADERS([postgresql/libpq-fe.h],
++                       [PGHEADER=postgresql/libpq-fe.h])
++   fi
++
++   if test [-z $PGHEADER]; then
++      PGHEADER=libpq-fe.h
++   fi
++fi
++
++AC_ARG_WITH([mysql],
++            [AS_HELP_STRING([--with-mysql], [enable mysql support])],
++            [with_mysql=$withval],
++            [with_mysql=no])
++
++AC_MSG_CHECKING([whether to enable mysql])
++if test "$with_mysql" = "yes"; then
++   if test [-z $MSHEADER]; then
++      AC_CHECK_HEADERS([mysql/mysql.h],
++                       [MSHEADER=mysql/mysql.h])
++   fi
++
++   if test [-z $MSHEADER]; then
++      MSHEADER=mysql.h
++   fi
++fi
++AC_MSG_RESULT($with_mysql)
++
++AC_ARG_WITH([sqlite],
++            [AS_HELP_STRING([--with-sqlite], [enable sqlite support])],
++            [with_sqlite=$withval],
++            [with_sqlite=no])
++
++AC_MSG_CHECKING([whether to enable sqlite])
++if test "$with_sqlite" = "yes"; then
++   if test [-z $SQHEADER]; then
++      SQHEADER=sqlite3.h
++   fi
+ fi
+ 
+ if test [$WORKING_VERSION = "1"]; then

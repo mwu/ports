@@ -1,0 +1,51 @@
+# $Id$
+
+PortSystem               1.0
+
+name                     urweb
+version                  20140426
+categories               lang www
+maintainers              nomaintainer
+license                  BSD
+description              The Ur/Web compiler.
+long_description         Ur/Web is the programming language Ur, a functional, pure, statically \
+                         typed and strict language, along with a library to build dynamic web \
+                         applications backed by SQL databases.
+homepage                 http://www.impredicative.com/ur
+platforms                darwin
+extract.suffix           .tgz
+master_sites             ${homepage}
+
+depends_build            bin:mlton:mlton
+depends_lib              port:openssl port:gmp
+universal_variant        no
+
+checksums                rmd160 f376f85d85462dec27281866f22db71baa717280 \
+                         sha256 a21de5c4eb5a7e2b604f51f596b9fe8e58edfae5249f49266fc0a7c2645df534 
+
+patchfiles               patch-configure.ac
+use_autoreconf           yes
+
+configure.args           --without-emacs --prefix="${prefix}" CC=clang CFLAGS="-std=c11 -Ofast" CCARGS="-Qunused-arguments"
+
+variant postgresql94 description {Enable postgresql support} {
+    depends_lib-append     port:postgresql94
+    configure.args-append  --with-postgresql
+    configure.args-replace "s|CCARGS=\"|CCARGS=\"-I/opt/local/include/ -L/opt/local/lib/postgresql94 |"
+}
+
+variant mysql55 description {Enable mysql5 support} {
+    depends_lib-append     port:mysql55
+    configure.args-append  --with-mysql
+    configure.args-replace "s|CCARGS=\"|CCARGS=\"-I${prefix}/include/mysql55/mysql -L${prefix}/lib/myslq55 |"
+}
+
+variant sqlite3 description {Enable sqlite3 support} {
+    depends_lib-append    port:sqlite3
+    configure.args-append --with-sqlite
+}
+
+variant emacs_mode description {Build urweb_mode for emacs} {
+    depends_build-append  port:emacs
+    configure.args-delete --without-emacs
+}
