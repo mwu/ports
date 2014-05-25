@@ -16,7 +16,7 @@ platforms                darwin
 extract.suffix           .tgz
 master_sites             ${homepage}
 
-depends_build            bin:mlton:mlton
+depends_build            port:mlton bin:autoreconf:autoconf
 depends_lib              port:openssl port:gmp
 universal_variant        no
 
